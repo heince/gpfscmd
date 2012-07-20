@@ -3,3 +3,5 @@ perl deps:
 - Path::Class
 - Net::SSH2
 - Mouse
+
+author: heince
