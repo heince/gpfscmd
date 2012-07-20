@@ -1,0 +1,5 @@
+perl deps:
+- Config::General
+- Path::Class
+- Net::SSH2
+- Mouse
