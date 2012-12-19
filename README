@@ -1,4 +1,8 @@
+GPFS tools to check pending nodes , unreachable nodes, list top waiter list, state, etc.
+
 perl deps:
 - Mouse
 - App::Cmd
 - Net::Ping
+- List::MoreUtils
+

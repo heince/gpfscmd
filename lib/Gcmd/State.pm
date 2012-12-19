@@ -6,39 +6,86 @@ use Net::Ping;
 
 extends 'Gcmd::General';
 
+#check ping & mmgetstate if available
 sub check_ping{
         my ($self, $ip) = @_;
 
-        my ($cmd, $status, $hostname);
-        print "Check ping ...\n";
-        #print "pinging $ip";
+        my ($cmd, $status);
         chomp $ip;
         $cmd = Net::Ping->new();
-
-        unless($cmd->ping($ip)){
-                $hostname = $self->get_hostname($ip);
-                print "$hostname not reachable\n";;
-                return 0;
-        }
+        
+        $status = $cmd->ping($ip);
+        
         $cmd->close();
+        return $status;
 }
 
 sub check_all{
         my $self = shift;
 
-        my $status;
         my $nodes = $self->get_all_nodes();
-        for(@$nodes){
-                my $stat = $self->check_ping($_);
-                $status = 1 unless $stat;
+
+        my ($status, $hostname);
+        my (@unreachable, @notactive);
+        for my $ip(@$nodes){
+                $hostname = $self->get_hostname($ip);
+
+                #
+                #unpingable node
+                #
+        
+                $status = $self->check_ping($ip);
+                unless($status){
+                        push @unreachable, $hostname;
+                }
+
+                #
+                #GPFS state not active
+                #
+
+                my $gpfs = $self->check_mmgetstate($ip);
+                if($gpfs =~ /active/){
+                        print "Ok\n";
+                }else{
+                        print $gpfs;
+                        push @notactive, $hostname;
+                }
         }
 
-        #check if any error than print summary
-        if($status == 1){
-                print "one / more nodes unreachable\n";
+        print "\nSummary\n";
+        print "=" x 10 . "\n\n";
+        print "Unreachable nodes :\n";
+
+        if(@unreachable){
+                for(@unreachable){
+                        print "$_\n";
+                }
+                print "\n";
         }else{
-                print "all nodes is reachable\n";
+                print "All nodes reachable\n\n";
+        }
+
+        print "Unactive GPFS state :\n";
+        if(@notactive){
+                for(@notactive){
+                        print "$_\n";
+                }
+                print "\n";
+        }else{
+                print "All GPFS state active\n\n";
         }
 }
+
+sub check_mmgetstate{
+        my ($self, $ip) = @_;
+
+        chomp $ip;
+        my $hostname = $self->get_hostname($ip);
+        print "\nRunning mmgetstate on $hostname\n";
+        my $cmd = `mmgetstate -N $hostname`;
+        return $cmd;
+}
+
+1;
 
 1;
